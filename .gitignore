@@ -1,6 +1,7 @@
 venv
 *.ini
 .idea
+file-examples
 
 
 

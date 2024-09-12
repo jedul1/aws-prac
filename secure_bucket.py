@@ -1,7 +1,5 @@
 import boto3
 import configparser
-import cv2
-
 
 '''
 In this file, I'm practicing programmatically reading in a file and inserting it into an S3 bucket,
@@ -13,7 +11,8 @@ but rather I intend to read in my credentials from a .config file that is on the
 
 I'll be practicing two Well-Architected Framework Principles:
 - Operational Excellence: by logging, allowing for smooth debugging operations
-- Security: By ensuring that objects in S3 are encrypted at rest and  in transit (if possible)
+- Security: By ensuring that objects in S3 are encrypted at rest and  in transit (if possible) 
+    • found out that new objects are encrypted by defualt, unless I specify my own encryption algorithm
 '''
 # Global vars - to be used in the full scope of the script
 config = configparser.ConfigParser()  # Instantiate a ConfigParse object, and store it in variable named 'config'
@@ -32,78 +31,44 @@ session = boto3.session.Session(aws_access_key_id=KEY_ID,
 client = session.client('s3')
 
 
-def put_object(file_type: str, bucket_name: str):
-    file_name = input("What's the path to the file you want to put into the bucket? ")
-    key = input("What's a key name to give the object? ")
-    if file_type.lower() == 'image':
-        put_image(file_name, key, bucket_name)
-    # elif file_type.lower() == 'video':
-    #     return put_video()
-    # elif file_type.lower() == 'audio':
-    #     return put_audio()
-    # elif file_typee.lower() == 'file':
-    #     return put_file()
+def put_object(bucket_name: str):
+    """
+    Puts an object in the specified bucket -> bucket_name.
+    bucket_name: the name of the bucket to put the file in
+    @:returns None
+    """
+    file_path = input("What's the path to the file you want to put into the bucket? ")
+    key = input("What's a key name to give the object? Make sure to include the file type extension ")
 
-'''
-Puts an image at file path -> 'image_file' in S3 bucket -> 'bucket_name' under key -> 'key'.
-image_file: the path to the image file
-key: the unique key used to query the object from the bucket its put in
-bucket_name: the name of the bucket to put the image in
-Returns: None
-'''
-def put_image(image_file: str, key: str, bucket_name: str):
-    if not image_file.endswith('.jpg') or not image_file.endswith('jpeg') or not image_file.endswith('png'):
-        print('Not an accepted image file type: use jpg, jpeg, or png')
-        return
-    with open(image_file, "rb") as f:
-        image = f.read()
+    with open(file_path, "rb") as f:
+        file_bytes = f.read()
     try:
         client.put_object(Bucket=bucket_name,
-                          Body=image,
+                          Body=file_bytes,
                           Key=key
                           )
     except client.exceptions.ClientError:
         # Try logging this
-        print(f"The image at path '{image_file}' failed to be put in bucket '{bucket_name}'")
-
-
-def put_video(video_file: str, key:str, bucket_name: str):
-    pass
-
-
-
-def put_file(file: str, key: str, bucket_name: str):
-    with open(file, "rb") as f:
-        file_bytes = f.read()
-    try:
-        client.put_object(Bucker=bucket_name,
-                          Body=file_bytes,
-                          Key=key)
-    except client.exceptions.ClientError:
-        print(f"The file at path '{file}' failed to be put in bucket '{bucket_name}'")
-
+        print(f"The image at path '{file_path}' failed to be put in bucket '{bucket_name}'")
 
 
 def add_object(bucket: str):
+    object_response = input("\nWould you like to add an object to your bucket?"
+                            " Type 'y' for yes, otherwise press any other character to exit. ")
+    if object_response.lower() != 'y':
+        return
     while True:
-        object_response = input("\nWould you like to add an object to your bucket?"
-                                " Type 'y' for yes, otherwise press any key to exit. ")
-        if object_response.lower() != 'y':
-            return
-        type_response = input("\nWhat type of file object do you want to add?"
-                              " Type 'image' for an image, 'video' for video, 'audio' for audio, "
-                              "and 'file' for any other file. Type any other character to exit. ")
-
-        if type_response.lower() != 'image' and type_response.lower() != 'audio' and \
-                type_response.lower() != 'video' and type_response.lower() != 'file':
-            return
-        put_object(type_response, bucket)
+        put_object(bucket)
+        another = input("\nDo you want to add another object to the bucket?"
+                        " Type 'y' for yes or any other character to exit: ")
+        if another.lower() != 'y':
+            break
 
 
 def main():
     bucket = ''
     bucket_option = input("\nDo you want to create a new bucket or add an object to an existing bucket?"
-                          "Type '1' for a new bucket, '2' for an existing bucket, or any other character to exit: ")
+                          " Type '1' for a new bucket, '2' for an existing bucket, or any other character to exit: ")
     if bucket_option == '1':
 
         while True:
